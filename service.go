@@ -67,6 +67,10 @@ func (this *Service) keepAlive(key, value string, ttl int64) (rsp <-chan *client
 	return rsp, grantRsp.ID, err
 }
 
+func (this *Service) UnRegister(root, path string) (err error) {
+	return this.Revoke(root, path)
+}
+
 func (this *Service) Revoke(root, path string) (err error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
