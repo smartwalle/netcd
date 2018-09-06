@@ -58,7 +58,9 @@ func (this *WatchInfo) DeletePath(path string) {
 
 func (this *WatchInfo) Handle(h WatchHandle) {
 	this.handle = h
-	for path, value := range this.paths {
-		this.handle(EventTypePut, this.key, path, value)
+	if this.handle != nil {
+		for path, value := range this.paths {
+			this.handle(EventTypePut, this.key, path, value)
+		}
 	}
 }
