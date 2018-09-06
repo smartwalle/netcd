@@ -17,8 +17,8 @@ func main() {
 	var s, _ = etcd4go.NewService(config)
 	info := s.Watch("my_service", clientv3.WithPrefix())
 
-	info.Handle(func(t string, path string, value []byte) {
-		fmt.Println(t, path, string(value))
+	info.Handle(func(t, key, path string, value []byte) {
+		fmt.Println(t, key, path, string(value))
 	})
 
 	wg.Wait()

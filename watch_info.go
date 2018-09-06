@@ -7,7 +7,7 @@ const (
 	EventTypeDelete = "delete"
 )
 
-type WatchHandle func(eventType string, path string, value []byte)
+type WatchHandle func(eventType, key, path string, value []byte)
 
 type WatchInfo struct {
 	mu     sync.Mutex
@@ -32,7 +32,7 @@ func (this *WatchInfo) AddPath(path string, value []byte) {
 	defer this.mu.Unlock()
 	this.paths[path] = value
 	if this.handle != nil {
-		this.handle(EventTypePut, path, value)
+		this.handle(EventTypePut, this.key, path, value)
 	}
 }
 
@@ -52,7 +52,7 @@ func (this *WatchInfo) DeletePath(path string) {
 	var value = this.paths[path]
 	delete(this.paths, path)
 	if this.handle != nil {
-		this.handle(EventTypeDelete, path, value)
+		this.handle(EventTypeDelete, this.key, path, value)
 	}
 }
 
