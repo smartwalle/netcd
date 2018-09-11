@@ -12,27 +12,23 @@ const (
 
 type etcdResolver struct {
 	scheme string
-	cfg    clientv3.Config
+	c      *Client
 	conn   resolver.ClientConn
 }
 
-func NewResolver(cfg clientv3.Config) resolver.Builder {
-	return NewResolverWithScheme(k_DEFAULT_SCHEME, cfg)
+func NewResolver(etcd *Client) resolver.Builder {
+	return NewResolverWithScheme(k_DEFAULT_SCHEME, etcd)
 }
 
-func NewResolverWithScheme(scheme string, cfg clientv3.Config) resolver.Builder {
-	return &etcdResolver{scheme: scheme, cfg: cfg}
+func NewResolverWithScheme(scheme string, c *Client) resolver.Builder {
+	return &etcdResolver{scheme: scheme, c: c}
 }
 
 func (this *etcdResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
-	s, err := NewService(this.cfg)
-	if err != nil {
-		return nil, err
-	}
 	this.conn = cc
 
 	var key = filepath.Join(target.Scheme, target.Authority, target.Endpoint)
-	watchInfo := s.Watch(key, clientv3.WithPrefix())
+	watchInfo := this.c.Watch(key, clientv3.WithPrefix())
 
 	watchInfo.Handle(func(eventType, key, path string, value []byte) {
 		var paths = watchInfo.GetPaths()
@@ -57,10 +53,10 @@ func (this *etcdResolver) Close() {
 }
 
 // grpc.Dial("scheme://path")
-func (this *Service) RegisterScheme(scheme, path, addr string, ttl int64) (err error) {
+func (this *Client) RegisterScheme(scheme, path, addr string, ttl int64) (err error) {
 	return this.Register(scheme, filepath.Join(path, addr), addr, ttl)
 }
 
-func (this *Service) UnRegisterScheme(scheme, path, addr string) (err error) {
+func (this *Client) UnRegisterScheme(scheme, path, addr string) (err error) {
 	return this.Revoke(scheme, filepath.Join(path, addr))
 }

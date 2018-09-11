@@ -14,8 +14,8 @@ func main() {
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
 
-	var s, _ = etcd4go.NewService(config)
-	info := s.Watch("my_service", clientv3.WithPrefix())
+	var c, _ = etcd4go.NewClient(config)
+	info := c.Watch("my_service", clientv3.WithPrefix())
 
 	info.Handle(func(t, key, path string, value []byte) {
 		fmt.Println(t, key, path, string(value))

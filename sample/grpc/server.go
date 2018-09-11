@@ -18,10 +18,11 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
-	var s, _ = etcd4go.NewService(config)
-	fmt.Println(s.RegisterScheme("etcd", "my_service/hw", addr, 5))
+	var c, _ = etcd4go.NewClient(config)
+	c.RegisterScheme("etcd", "my_service/hw", addr, 5)
 
 	server := grpc.NewServer()
 	hw.RegisterFirstGRPCServer(server, &service{})

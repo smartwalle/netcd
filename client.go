@@ -7,26 +7,26 @@ import (
 	"sync"
 )
 
-type Service struct {
+type Client struct {
 	client        *clientv3.Client
 	mu            sync.Mutex
 	leaseIdList   map[string]clientv3.LeaseID
 	watchInfoList map[string]*WatchInfo
 }
 
-func NewService(cfg clientv3.Config) (*Service, error) {
-	client, err := clientv3.New(cfg)
+func NewClient(cfg clientv3.Config) (*Client, error) {
+	c, err := clientv3.New(cfg)
 	if err != nil {
 		return nil, err
 	}
-	var s = &Service{}
-	s.client = client
+	var s = &Client{}
+	s.client = c
 	s.leaseIdList = make(map[string]clientv3.LeaseID)
 	s.watchInfoList = make(map[string]*WatchInfo)
 	return s, nil
 }
 
-func (this *Service) Register(root, path, value string, ttl int64) (err error) {
+func (this *Client) Register(root, path, value string, ttl int64) (err error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
@@ -50,7 +50,7 @@ func (this *Service) Register(root, path, value string, ttl int64) (err error) {
 	return err
 }
 
-func (this *Service) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
+func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
 	kv := clientv3.NewKV(this.client)
 	lease := clientv3.NewLease(this.client)
 
@@ -67,11 +67,11 @@ func (this *Service) keepAlive(key, value string, ttl int64) (rsp <-chan *client
 	return rsp, grantRsp.ID, err
 }
 
-func (this *Service) UnRegister(root, path string) (err error) {
+func (this *Client) UnRegister(root, path string) (err error) {
 	return this.Revoke(root, path)
 }
 
-func (this *Service) Revoke(root, path string) (err error) {
+func (this *Client) Revoke(root, path string) (err error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
@@ -83,13 +83,13 @@ func (this *Service) Revoke(root, path string) (err error) {
 	return nil
 }
 
-func (this *Service) revoke(leaseId clientv3.LeaseID) (err error) {
+func (this *Client) revoke(leaseId clientv3.LeaseID) (err error) {
 	lease := clientv3.NewLease(this.client)
 	_, err = lease.Revoke(context.Background(), leaseId)
 	return err
 }
 
-func (this *Service) Watch(key string, opts ...clientv3.OpOption) (watchInfo *WatchInfo) {
+func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *WatchInfo) {
 	watcher := clientv3.NewWatcher(this.client)
 	watchChan := watcher.Watch(context.Background(), key, opts...)
 

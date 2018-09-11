@@ -14,8 +14,8 @@ func main() {
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
 
-	var s, _ = etcd4go.NewService(config)
-	fmt.Println(s.Register("my_service", "node_1", "123", 5))
+	var c, _ = etcd4go.NewClient(config)
+	fmt.Println(c.Register("my_service", "node_1", "123", 5))
 
 	wg.Wait()
 }

@@ -14,7 +14,8 @@ import (
 func main() {
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
-	resolver.Register(etcd4go.NewResolverWithScheme("etcd", config))
+	var s, _ = etcd4go.NewClient(config)
+	resolver.Register(etcd4go.NewResolverWithScheme("etcd", s))
 
 	conn, err := grpc.Dial("etcd://my_service/hw", grpc.WithBalancerName("round_robin"), grpc.WithInsecure())
 	if err != nil {
