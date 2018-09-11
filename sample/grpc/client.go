@@ -27,12 +27,12 @@ func main() {
 	c := hw.NewFirstGRPCClient(conn)
 
 	for {
+		time.Sleep(time.Second * 1)
 		rsp, err := c.FirstCall(context.Background(), &hw.FirstRequest{Name: "Yang"})
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
 		fmt.Println(rsp.Message)
-		time.Sleep(time.Second * 1)
 	}
 }
