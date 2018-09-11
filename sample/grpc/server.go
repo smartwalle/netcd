@@ -25,7 +25,7 @@ func main() {
 
 	// 注册服务
 	var c, _ = etcd4go.NewClient(config)
-	c.RegisterWithScheme("etcd", "my_service/hw", addr, 5)
+	fmt.Println(c.RegisterWithScheme("etcd", "my_service/hw", addr, 5))
 
 	server := grpc.NewServer()
 	hw.RegisterFirstGRPCServer(server, &service{})

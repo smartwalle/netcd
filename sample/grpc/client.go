@@ -37,6 +37,6 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		fmt.Println(rsp.Message)
+		fmt.Println("Receive", rsp.Message)
 	}
 }

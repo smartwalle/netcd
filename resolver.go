@@ -13,7 +13,6 @@ const (
 type etcdResolver struct {
 	scheme string
 	c      *Client
-	conn   resolver.ClientConn
 }
 
 func NewResolver(etcd *Client) resolver.Builder {
@@ -25,8 +24,6 @@ func NewResolverWithScheme(scheme string, c *Client) resolver.Builder {
 }
 
 func (this *etcdResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
-	this.conn = cc
-
 	var key = filepath.Join(target.Scheme, target.Authority, target.Endpoint)
 	watchInfo := this.c.Watch(key, clientv3.WithPrefix())
 
@@ -37,7 +34,7 @@ func (this *etcdResolver) Build(target resolver.Target, cc resolver.ClientConn, 
 			var add = resolver.Address{Addr: string(value)}
 			addList = append(addList, add)
 		}
-		this.conn.NewAddress(addList)
+		cc.NewAddress(addList)
 	})
 	return this, nil
 }
