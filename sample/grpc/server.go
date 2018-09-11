@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/smartwalle/etcd4go"
-	"github.com/smartwalle/ngx/a/hw"
+	"github.com/smartwalle/etcd4go/sample/grpc/hw"
 	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
 	"net"
@@ -18,7 +18,6 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
 	var s, _ = etcd4go.NewService(config)

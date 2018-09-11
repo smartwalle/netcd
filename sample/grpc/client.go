@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/smartwalle/etcd4go"
-	"github.com/smartwalle/ngx/a/hw"
+	"github.com/smartwalle/etcd4go/sample/grpc/hw"
 	"go.etcd.io/etcd/clientv3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/resolver"
