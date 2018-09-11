@@ -12,11 +12,15 @@ import (
 )
 
 func main() {
+	// 初始化 etcd 连接配置文件
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
+
+	// 注册命名解析及服务发现
 	var s, _ = etcd4go.NewClient(config)
 	resolver.Register(etcd4go.NewResolverWithScheme("etcd", s))
 
+	// dial
 	conn, err := grpc.Dial("etcd://my_service/hw", grpc.WithBalancerName("round_robin"), grpc.WithInsecure())
 	if err != nil {
 		fmt.Println(err)

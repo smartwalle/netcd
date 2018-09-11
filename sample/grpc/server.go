@@ -10,7 +10,7 @@ import (
 	"net"
 )
 
-var addr = ":5003"
+var addr = ":5004"
 
 func main() {
 	listener, err := net.Listen("tcp", addr)
@@ -19,10 +19,13 @@ func main() {
 		return
 	}
 
+	// 初始化 etcd 连接配置文件
 	var config = clientv3.Config{}
 	config.Endpoints = []string{"localhost:2379"}
+
+	// 注册服务
 	var c, _ = etcd4go.NewClient(config)
-	c.RegisterScheme("etcd", "my_service/hw", addr, 5)
+	c.RegisterWithScheme("etcd", "my_service/hw", addr, 5)
 
 	server := grpc.NewServer()
 	hw.RegisterFirstGRPCServer(server, &service{})

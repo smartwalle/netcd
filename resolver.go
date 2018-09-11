@@ -53,10 +53,10 @@ func (this *etcdResolver) Close() {
 }
 
 // grpc.Dial("scheme://path")
-func (this *Client) RegisterScheme(scheme, path, addr string, ttl int64) (err error) {
+func (this *Client) RegisterWithScheme(scheme, path, addr string, ttl int64) (err error) {
 	return this.Register(scheme, filepath.Join(path, addr), addr, ttl)
 }
 
-func (this *Client) UnRegisterScheme(scheme, path, addr string) (err error) {
+func (this *Client) UnRegisterWithScheme(scheme, path, addr string) (err error) {
 	return this.Revoke(scheme, filepath.Join(path, addr))
 }
