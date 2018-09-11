@@ -10,7 +10,7 @@ import (
 	"net"
 )
 
-var addr = ":5004"
+var addr = ":5003"
 
 func main() {
 	listener, err := net.Listen("tcp", addr)

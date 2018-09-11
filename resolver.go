@@ -24,7 +24,7 @@ func NewResolverWithScheme(scheme string, c *Client) resolver.Builder {
 }
 
 func (this *etcdResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
-	var key = filepath.Join(target.Scheme, target.Authority, target.Endpoint)
+	var key = target.Scheme + "://" + filepath.Join(target.Authority, target.Endpoint)
 	watchInfo := this.c.Watch(key, clientv3.WithPrefix())
 
 	watchInfo.Handle(func(eventType, key, path string, value []byte) {
@@ -49,11 +49,10 @@ func (this *etcdResolver) ResolveNow(option resolver.ResolveNowOption) {
 func (this *etcdResolver) Close() {
 }
 
-// grpc.Dial("scheme://path")
-func (this *Client) RegisterWithScheme(scheme, path, addr string, ttl int64) (err error) {
-	return this.Register(scheme, filepath.Join(path, addr), addr, ttl)
+func (this *Client) RegisterWithScheme(scheme string, path, addr string, ttl int64) (key string, err error) {
+	return this.RegisterWithKey(scheme+"://"+filepath.Join(path, addr), addr, ttl)
 }
 
-func (this *Client) UnRegisterWithScheme(scheme, path, addr string) (err error) {
-	return this.Revoke(scheme, filepath.Join(path, addr))
+func (this *Client) UnRegisterWithScheme(scheme string, path, addr string) (err error) {
+	return this.RevokeWithKey(scheme + "://" + filepath.Join(path, addr))
 }

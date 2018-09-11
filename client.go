@@ -26,14 +26,17 @@ func NewClient(cfg clientv3.Config) (*Client, error) {
 	return s, nil
 }
 
-func (this *Client) Register(root, path, value string, ttl int64) (err error) {
+func (this *Client) Register(root, path, value string, ttl int64) (string, error) {
+	return this.RegisterWithKey(filepath.Join(root, path), value, ttl)
+}
+
+func (this *Client) RegisterWithKey(key, value string, ttl int64) (string, error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	var key = filepath.Join(root, path)
 	keepAliveRsp, leaseId, err := this.keepAlive(key, value, ttl)
 	if err != nil {
-		return err
+		return "", err
 	}
 	this.leaseIdList[key] = leaseId
 	go func() {
@@ -47,7 +50,7 @@ func (this *Client) Register(root, path, value string, ttl int64) (err error) {
 			}
 		}
 	}()
-	return err
+	return key, err
 }
 
 func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
@@ -71,11 +74,18 @@ func (this *Client) UnRegister(root, path string) (err error) {
 	return this.Revoke(root, path)
 }
 
+func (this *Client) UnRegisterWithKey(key string) (err error) {
+	return this.RevokeWithKey(key)
+}
+
 func (this *Client) Revoke(root, path string) (err error) {
+	return this.RevokeWithKey(filepath.Join(root, path))
+}
+
+func (this *Client) RevokeWithKey(key string) (err error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	var key = filepath.Join(root, path)
 	if leaseId, ok := this.leaseIdList[key]; ok {
 		delete(this.leaseIdList, key)
 		return this.revoke(leaseId)

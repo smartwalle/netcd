@@ -37,6 +37,6 @@ func main() {
 			fmt.Println(err)
 			continue
 		}
-		fmt.Println("Receive", rsp.Message)
+		fmt.Println("rand", rsp.Message)
 	}
 }
