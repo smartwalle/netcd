@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	EVENT_TYPE_PUT    = "put"
-	EVENT_TYPE_DELETE = "delete"
+	K_EVENT_TYPE_PUT    = "put"
+	K_EVENT_TYPE_DELETE = "delete"
 )
 
 type Handler func(eventType, key, path string, value []byte)
@@ -37,7 +37,7 @@ func (this *WatchInfo) addPath(path string, value []byte) {
 	defer this.mu.Unlock()
 	this.paths[path] = value
 	if this.handler != nil {
-		this.handler(EVENT_TYPE_PUT, this.key, path, value)
+		this.handler(K_EVENT_TYPE_PUT, this.key, path, value)
 	}
 }
 
@@ -57,7 +57,7 @@ func (this *WatchInfo) deletePath(path string) {
 	var value = this.paths[path]
 	delete(this.paths, path)
 	if this.handler != nil {
-		this.handler(EVENT_TYPE_DELETE, this.key, path, value)
+		this.handler(K_EVENT_TYPE_DELETE, this.key, path, value)
 	}
 }
 
@@ -65,7 +65,7 @@ func (this *WatchInfo) Handle(h Handler) {
 	this.handler = h
 	if this.handler != nil {
 		for path, value := range this.paths {
-			this.handler(EVENT_TYPE_PUT, this.key, path, value)
+			this.handler(K_EVENT_TYPE_PUT, this.key, path, value)
 		}
 	}
 }
