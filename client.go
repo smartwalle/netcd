@@ -90,7 +90,7 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	watchInfo = newWatchInfo(key)
+	watchInfo = newWatchInfo(key, watcher)
 	kv := clientv3.NewKV(this.client)
 	rsp, _ := kv.Get(context.Background(), key, opts...)
 	if rsp != nil {
@@ -99,10 +99,7 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 		}
 	}
 
-	var ctx, cancel = context.WithCancel(context.Background())
-	watchInfo.cancel = cancel
-
-	go func(ctx context.Context, wi *WatchInfo, wc clientv3.WatchChan) {
+	go func(wi *WatchInfo, wc clientv3.WatchChan) {
 		for {
 			select {
 			case wc, ok := <-wc:
@@ -117,10 +114,8 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 						wi.DeletePath(string(event.Kv.Key))
 					}
 				}
-			case <-ctx.Done():
-				return
 			}
 		}
-	}(ctx, watchInfo, watchChan)
+	}(watchInfo, watchChan)
 	return watchInfo
 }

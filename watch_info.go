@@ -1,7 +1,7 @@
 package etcd4go
 
 import (
-	"context"
+	"go.etcd.io/etcd/clientv3"
 	"sync"
 )
 
@@ -13,17 +13,18 @@ const (
 type WatchHandle func(eventType, key, path string, value []byte)
 
 type WatchInfo struct {
-	mu     sync.Mutex
-	key    string
-	paths  map[string][]byte
-	handle WatchHandle
-	cancel context.CancelFunc
+	mu      sync.Mutex
+	key     string
+	paths   map[string][]byte
+	handle  WatchHandle
+	watcher clientv3.Watcher
 }
 
-func newWatchInfo(key string) *WatchInfo {
+func newWatchInfo(key string, watcher clientv3.Watcher) *WatchInfo {
 	var n = &WatchInfo{}
 	n.key = key
 	n.paths = make(map[string][]byte)
+	n.watcher = watcher
 	return n
 }
 
@@ -70,7 +71,7 @@ func (this *WatchInfo) Handle(h WatchHandle) {
 }
 
 func (this *WatchInfo) Cancel() {
-	if this.cancel != nil {
-		this.cancel()
+	if this.watcher != nil {
+		this.watcher.Close()
 	}
 }
