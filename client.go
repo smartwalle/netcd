@@ -8,10 +8,9 @@ import (
 )
 
 type Client struct {
-	client        *clientv3.Client
-	mu            sync.Mutex
-	leaseIdList   map[string]clientv3.LeaseID
-	watchInfoList map[string]*WatchInfo
+	client      *clientv3.Client
+	mu          sync.Mutex
+	leaseIdList map[clientv3.LeaseID]string
 }
 
 func NewClient(cfg clientv3.Config) (*Client, error) {
@@ -21,36 +20,35 @@ func NewClient(cfg clientv3.Config) (*Client, error) {
 	}
 	var s = &Client{}
 	s.client = c
-	s.leaseIdList = make(map[string]clientv3.LeaseID)
-	s.watchInfoList = make(map[string]*WatchInfo)
+	s.leaseIdList = make(map[clientv3.LeaseID]string)
 	return s, nil
 }
 
-func (this *Client) Register(root, path, value string, ttl int64) (string, error) {
+func (this *Client) Register(root, path, value string, ttl int64) (int64, string, error) {
 	return this.RegisterWithKey(filepath.Join(root, path), value, ttl)
 }
 
-func (this *Client) RegisterWithKey(key, value string, ttl int64) (string, error) {
+func (this *Client) RegisterWithKey(key, value string, ttl int64) (int64, string, error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
 	keepAliveRsp, leaseId, err := this.keepAlive(key, value, ttl)
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
-	this.leaseIdList[key] = leaseId
-	go func() {
+	this.leaseIdList[leaseId] = key
+	go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
 		for {
 			select {
-			case _, ok := <-keepAliveRsp:
+			case _, ok := <-rsp:
 				if ok == false {
-					this.revoke(leaseId)
+					this.Revoke(int64(leaseId))
 					return
 				}
 			}
 		}
-	}()
-	return key, err
+	}(leaseId, keepAliveRsp)
+	return int64(leaseId), key, err
 }
 
 func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
@@ -70,32 +68,18 @@ func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv
 	return rsp, grantRsp.ID, err
 }
 
-func (this *Client) UnRegister(root, path string) (err error) {
-	return this.Revoke(root, path)
+func (this *Client) UnRegister(leaseId int64) (err error) {
+	return this.Revoke(leaseId)
 }
 
-func (this *Client) UnRegisterWithKey(key string) (err error) {
-	return this.RevokeWithKey(key)
-}
-
-func (this *Client) Revoke(root, path string) (err error) {
-	return this.RevokeWithKey(filepath.Join(root, path))
-}
-
-func (this *Client) RevokeWithKey(key string) (err error) {
+func (this *Client) Revoke(leaseId int64) (err error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	if leaseId, ok := this.leaseIdList[key]; ok {
-		delete(this.leaseIdList, key)
-		return this.revoke(leaseId)
-	}
-	return nil
-}
+	delete(this.leaseIdList, clientv3.LeaseID(leaseId))
 
-func (this *Client) revoke(leaseId clientv3.LeaseID) (err error) {
 	lease := clientv3.NewLease(this.client)
-	_, err = lease.Revoke(context.Background(), leaseId)
+	_, err = lease.Revoke(context.Background(), clientv3.LeaseID(leaseId))
 	return err
 }
 
@@ -105,37 +89,35 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 
 	this.mu.Lock()
 	defer this.mu.Unlock()
-	watchInfo = this.watchInfoList[key]
-	if watchInfo == nil {
-		watchInfo = newWatchInfo(key)
-		this.watchInfoList[key] = watchInfo
 
-		kv := clientv3.NewKV(this.client)
-		rsp, _ := kv.Get(context.Background(), key, opts...)
-		if rsp != nil {
-			for _, k := range rsp.Kvs {
-				watchInfo.AddPath(string(k.Key), k.Value)
-			}
+	watchInfo = newWatchInfo(key)
+	kv := clientv3.NewKV(this.client)
+	rsp, _ := kv.Get(context.Background(), key, opts...)
+	if rsp != nil {
+		for _, k := range rsp.Kvs {
+			watchInfo.AddPath(string(k.Key), k.Value)
 		}
 	}
 
-	go func(info *WatchInfo) {
+	go func(wi *WatchInfo, wc clientv3.WatchChan) {
 		for {
 			select {
-			case wc, ok := <-watchChan:
+			case wc, ok := <-wc:
 				if ok == false {
 					return
 				}
 				for _, event := range wc.Events {
 					switch event.Type {
 					case clientv3.EventTypePut:
-						info.AddPath(string(event.Kv.Key), event.Kv.Value)
+						wi.AddPath(string(event.Kv.Key), event.Kv.Value)
 					case clientv3.EventTypeDelete:
-						info.DeletePath(string(event.Kv.Key))
+						wi.DeletePath(string(event.Kv.Key))
 					}
 				}
+			case <-wi.ctx.Done():
+				return
 			}
 		}
-	}(watchInfo)
+	}(watchInfo, watchChan)
 	return watchInfo
 }

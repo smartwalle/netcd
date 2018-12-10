@@ -1,6 +1,9 @@
 package etcd4go
 
-import "sync"
+import (
+	"context"
+	"sync"
+)
 
 const (
 	EventTypePut    = "put"
@@ -10,16 +13,19 @@ const (
 type WatchHandle func(eventType, key, path string, value []byte)
 
 type WatchInfo struct {
-	mu     sync.Mutex
-	key    string
-	paths  map[string][]byte
-	handle WatchHandle
+	mu        sync.Mutex
+	key       string
+	paths     map[string][]byte
+	handle    WatchHandle
+	ctx       context.Context
+	ctxCancel context.CancelFunc
 }
 
 func newWatchInfo(key string) *WatchInfo {
 	var n = &WatchInfo{}
 	n.key = key
 	n.paths = make(map[string][]byte)
+	n.ctx, n.ctxCancel = context.WithCancel(context.Background())
 	return n
 }
 
@@ -63,4 +69,8 @@ func (this *WatchInfo) Handle(h WatchHandle) {
 			this.handle(EventTypePut, this.key, path, value)
 		}
 	}
+}
+
+func (this *WatchInfo) Cancel() {
+	this.ctxCancel()
 }

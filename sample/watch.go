@@ -15,10 +15,22 @@ func main() {
 	config.Endpoints = []string{"localhost:2379"}
 
 	var c, _ = etcd4go.NewClient(config)
-	info := c.Watch("my_service", clientv3.WithPrefix())
 
-	info.Handle(func(t, key, path string, value []byte) {
-		fmt.Println(t, key, path, string(value))
+	info1 := c.Watch("my_service", clientv3.WithPrefix())
+	info1.Handle(func(t, key, path string, value []byte) {
+		fmt.Println("1", t, key, path, string(value))
+	})
+
+	info2 := c.Watch("my_service", clientv3.WithPrefix())
+	info2.Handle(func(t, key, path string, value []byte) {
+		fmt.Println("2", t, key, path, string(value))
+	})
+
+	info3 := c.Watch("my_service", clientv3.WithPrefix())
+	info3.Handle(func(t, key, path string, value []byte) {
+		fmt.Println("3", t, key, path, string(value))
+
+		info3.Cancel()
 	})
 
 	wg.Wait()
