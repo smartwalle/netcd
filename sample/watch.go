@@ -29,7 +29,6 @@ func main() {
 	info3 := c.Watch("my_service", clientv3.WithPrefix())
 	info3.Handle(func(t, key, path string, value []byte) {
 		fmt.Println("3", t, key, path, string(value))
-
 		info3.Close()
 	})
 
