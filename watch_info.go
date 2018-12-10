@@ -10,13 +10,13 @@ const (
 	EventTypeDelete = "delete"
 )
 
-type WatchHandle func(eventType, key, path string, value []byte)
+type Handler func(eventType, key, path string, value []byte)
 
 type WatchInfo struct {
 	mu      sync.Mutex
 	key     string
 	paths   map[string][]byte
-	handle  WatchHandle
+	handler Handler
 	watcher clientv3.Watcher
 }
 
@@ -36,8 +36,8 @@ func (this *WatchInfo) addPath(path string, value []byte) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	this.paths[path] = value
-	if this.handle != nil {
-		this.handle(EventTypePut, this.key, path, value)
+	if this.handler != nil {
+		this.handler(EventTypePut, this.key, path, value)
 	}
 }
 
@@ -56,16 +56,16 @@ func (this *WatchInfo) deletePath(path string) {
 	defer this.mu.Unlock()
 	var value = this.paths[path]
 	delete(this.paths, path)
-	if this.handle != nil {
-		this.handle(EventTypeDelete, this.key, path, value)
+	if this.handler != nil {
+		this.handler(EventTypeDelete, this.key, path, value)
 	}
 }
 
-func (this *WatchInfo) Handle(h WatchHandle) {
-	this.handle = h
-	if this.handle != nil {
+func (this *WatchInfo) Handle(h Handler) {
+	this.handler = h
+	if this.handler != nil {
 		for path, value := range this.paths {
-			this.handle(EventTypePut, this.key, path, value)
+			this.handler(EventTypePut, this.key, path, value)
 		}
 	}
 }
