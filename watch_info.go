@@ -32,7 +32,7 @@ func (this *WatchInfo) Key() string {
 	return this.key
 }
 
-func (this *WatchInfo) AddPath(path string, value []byte) {
+func (this *WatchInfo) addPath(path string, value []byte) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	this.paths[path] = value
@@ -51,7 +51,7 @@ func (this *WatchInfo) GetPaths() map[string][]byte {
 	return this.paths
 }
 
-func (this *WatchInfo) DeletePath(path string) {
+func (this *WatchInfo) deletePath(path string) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 	var value = this.paths[path]
@@ -70,8 +70,9 @@ func (this *WatchInfo) Handle(h WatchHandle) {
 	}
 }
 
-func (this *WatchInfo) Cancel() {
-	if this.watcher != nil {
-		this.watcher.Close()
+func (this *WatchInfo) Close() error {
+	if this.watcher == nil {
+		return nil
 	}
+	return this.watcher.Close()
 }

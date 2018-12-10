@@ -95,7 +95,7 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 	rsp, _ := kv.Get(context.Background(), key, opts...)
 	if rsp != nil {
 		for _, k := range rsp.Kvs {
-			watchInfo.AddPath(string(k.Key), k.Value)
+			watchInfo.addPath(string(k.Key), k.Value)
 		}
 	}
 
@@ -109,9 +109,9 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 				for _, event := range wc.Events {
 					switch event.Type {
 					case clientv3.EventTypePut:
-						wi.AddPath(string(event.Kv.Key), event.Kv.Value)
+						wi.addPath(string(event.Kv.Key), event.Kv.Value)
 					case clientv3.EventTypeDelete:
-						wi.DeletePath(string(event.Kv.Key))
+						wi.deletePath(string(event.Kv.Key))
 					}
 				}
 			}
