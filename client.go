@@ -99,7 +99,10 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 		}
 	}
 
-	go func(wi *WatchInfo, wc clientv3.WatchChan) {
+	var ctx, cancel = context.WithCancel(context.Background())
+	watchInfo.cancel = cancel
+
+	go func(ctx context.Context, wi *WatchInfo, wc clientv3.WatchChan) {
 		for {
 			select {
 			case wc, ok := <-wc:
@@ -114,10 +117,10 @@ func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *Wat
 						wi.DeletePath(string(event.Kv.Key))
 					}
 				}
-			case <-wi.ctx.Done():
+			case <-ctx.Done():
 				return
 			}
 		}
-	}(watchInfo, watchChan)
+	}(ctx, watchInfo, watchChan)
 	return watchInfo
 }

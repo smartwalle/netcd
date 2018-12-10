@@ -13,19 +13,17 @@ const (
 type WatchHandle func(eventType, key, path string, value []byte)
 
 type WatchInfo struct {
-	mu        sync.Mutex
-	key       string
-	paths     map[string][]byte
-	handle    WatchHandle
-	ctx       context.Context
-	ctxCancel context.CancelFunc
+	mu     sync.Mutex
+	key    string
+	paths  map[string][]byte
+	handle WatchHandle
+	cancel context.CancelFunc
 }
 
 func newWatchInfo(key string) *WatchInfo {
 	var n = &WatchInfo{}
 	n.key = key
 	n.paths = make(map[string][]byte)
-	n.ctx, n.ctxCancel = context.WithCancel(context.Background())
 	return n
 }
 
@@ -72,5 +70,7 @@ func (this *WatchInfo) Handle(h WatchHandle) {
 }
 
 func (this *WatchInfo) Cancel() {
-	this.ctxCancel()
+	if this.cancel != nil {
+		this.cancel()
+	}
 }
