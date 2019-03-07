@@ -3,7 +3,6 @@ package etcd4go
 import (
 	"context"
 	"go.etcd.io/etcd/clientv3"
-	"path/filepath"
 	"sync"
 )
 
@@ -24,11 +23,7 @@ func NewClient(cfg clientv3.Config) (*Client, error) {
 	return s, nil
 }
 
-func (this *Client) Register(root, path, value string, ttl int64) (int64, string, error) {
-	return this.RegisterWithKey(filepath.Join(root, path), value, ttl)
-}
-
-func (this *Client) RegisterWithKey(key, value string, ttl int64) (int64, string, error) {
+func (this *Client) Register(key, value string, ttl int64) (int64, string, error) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
@@ -68,7 +63,7 @@ func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv
 	return rsp, grantRsp.ID, err
 }
 
-func (this *Client) UnRegister(leaseId int64) (err error) {
+func (this *Client) Deregister(leaseId int64) (err error) {
 	return this.Revoke(leaseId)
 }
 
