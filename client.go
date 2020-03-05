@@ -3,13 +3,10 @@ package etcd4go
 import (
 	"context"
 	"go.etcd.io/etcd/clientv3"
-	"sync"
 )
 
 type Client struct {
-	client      *clientv3.Client
-	mu          sync.Mutex
-	leaseIdList map[clientv3.LeaseID]string
+	client *clientv3.Client
 }
 
 func NewClient(cfg clientv3.Config) (*Client, error) {
@@ -19,36 +16,43 @@ func NewClient(cfg clientv3.Config) (*Client, error) {
 	}
 	var s = &Client{}
 	s.client = c
-	s.leaseIdList = make(map[clientv3.LeaseID]string)
 	return s, nil
 }
 
-func (this *Client) Register(key, value string, ttl int64) (int64, string, error) {
-	this.mu.Lock()
-	defer this.mu.Unlock()
+func (this *Client) NewKV() clientv3.KV {
+	return clientv3.NewKV(this.client)
+}
 
-	keepAliveRsp, leaseId, err := this.keepAlive(key, value, ttl)
+func (this *Client) Register(key, value string, ttl int64) (int64, string, error) {
+	if ttl <= 0 {
+		var kv = this.NewKV()
+		if _, err := kv.Put(context.Background(), key, value); err != nil {
+			return 0, "", err
+		}
+		return 0, key, nil
+	}
+
+	_, leaseId, err := this.keepAlive(key, value, ttl)
 	if err != nil {
 		return 0, "", err
 	}
-	this.leaseIdList[leaseId] = key
-	go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
-		for {
-			select {
-			case _, ok := <-rsp:
-				if ok == false {
-					this.Revoke(int64(leaseId))
-					return
-				}
-			}
-		}
-	}(leaseId, keepAliveRsp)
+	//go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
+	//	for {
+	//		select {
+	//		case _, ok := <-rsp:
+	//			if ok == false {
+	//				this.Revoke(int64(leaseId))
+	//				return
+	//			}
+	//		}
+	//	}
+	//}(leaseId, keepAliveRsp)
 	return int64(leaseId), key, err
 }
 
 func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
-	kv := clientv3.NewKV(this.client)
-	lease := clientv3.NewLease(this.client)
+	var kv = this.NewKV()
+	var lease = clientv3.NewLease(this.client)
 
 	grantRsp, err := lease.Grant(context.Background(), ttl)
 	if err != nil {
@@ -68,25 +72,17 @@ func (this *Client) Deregister(leaseId int64) (err error) {
 }
 
 func (this *Client) Revoke(leaseId int64) (err error) {
-	this.mu.Lock()
-	defer this.mu.Unlock()
-
-	delete(this.leaseIdList, clientv3.LeaseID(leaseId))
-
 	lease := clientv3.NewLease(this.client)
 	_, err = lease.Revoke(context.Background(), clientv3.LeaseID(leaseId))
 	return err
 }
 
-func (this *Client) Watch(key string, opts ...clientv3.OpOption) (watchInfo *WatchInfo) {
-	watcher := clientv3.NewWatcher(this.client)
-	watchChan := watcher.Watch(context.Background(), key, opts...)
+func (this *Client) Watch(key string, handler Handler, opts ...clientv3.OpOption) (watchInfo *WatchInfo) {
+	var watcher = clientv3.NewWatcher(this.client)
+	var watchChan = watcher.Watch(context.Background(), key, opts...)
 
-	this.mu.Lock()
-	defer this.mu.Unlock()
-
-	watchInfo = newWatchInfo(key, watcher)
-	kv := clientv3.NewKV(this.client)
+	watchInfo = newWatchInfo(key, handler, watcher)
+	var kv = this.NewKV()
 	rsp, _ := kv.Get(context.Background(), key, opts...)
 	if rsp != nil {
 		for _, k := range rsp.Kvs {

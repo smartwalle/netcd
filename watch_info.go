@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	K_EVENT_TYPE_PUT    = "put"
-	K_EVENT_TYPE_DELETE = "delete"
+	EventTypePut    string = "PUT"
+	EventTypeDelete string = "DELETE"
 )
 
 type Handler func(eventType, key, path string, value []byte)
@@ -20,10 +20,11 @@ type WatchInfo struct {
 	watcher clientv3.Watcher
 }
 
-func newWatchInfo(key string, watcher clientv3.Watcher) *WatchInfo {
+func newWatchInfo(key string, handler Handler, watcher clientv3.Watcher) *WatchInfo {
 	var n = &WatchInfo{}
 	n.key = key
 	n.paths = make(map[string][]byte)
+	n.handler = handler
 	n.watcher = watcher
 	return n
 }
@@ -37,7 +38,7 @@ func (this *WatchInfo) addPath(path string, value []byte) {
 	defer this.mu.Unlock()
 	this.paths[path] = value
 	if this.handler != nil {
-		this.handler(K_EVENT_TYPE_PUT, this.key, path, value)
+		this.handler(EventTypePut, this.key, path, value)
 	}
 }
 
@@ -57,20 +58,13 @@ func (this *WatchInfo) deletePath(path string) {
 	var value = this.paths[path]
 	delete(this.paths, path)
 	if this.handler != nil {
-		this.handler(K_EVENT_TYPE_DELETE, this.key, path, value)
-	}
-}
-
-func (this *WatchInfo) Handle(h Handler) {
-	this.handler = h
-	if this.handler != nil {
-		for path, value := range this.paths {
-			this.handler(K_EVENT_TYPE_PUT, this.key, path, value)
-		}
+		this.handler(EventTypeDelete, this.key, path, value)
 	}
 }
 
 func (this *WatchInfo) Close() error {
+	this.mu.Lock()
+	defer this.mu.Unlock()
 	if this.watcher == nil {
 		return nil
 	}

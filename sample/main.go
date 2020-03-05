@@ -17,6 +17,8 @@ func main() {
 	var c, _ = etcd4go.NewClient(config)
 	id, key, err := c.Register("my_service/node_1", "123", 5)
 	fmt.Println(id, key, err)
+	id, key, err = c.Register("my_service/node_2", "1234", 0)
+	fmt.Println(id, key, err)
 
 	wg.Wait()
 }
