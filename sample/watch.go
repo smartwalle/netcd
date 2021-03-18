@@ -2,31 +2,37 @@ package main
 
 import (
 	"fmt"
+	"github.com/coreos/etcd/clientv3"
 	"github.com/smartwalle/etcd4go"
-	"go.etcd.io/etcd/clientv3"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
-	var wg = &sync.WaitGroup{}
-	wg.Add(1)
-
 	var config = clientv3.Config{}
-	config.Endpoints = []string{"localhost:2379"}
+	config.Endpoints = []string{"192.168.1.77:2379"}
+	etcdClient, err := clientv3.New(config)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	var c, _ = etcd4go.NewClient(config)
+	var client, _ = etcd4go.NewClient(etcdClient)
 
-	c.Watch("my_service", func(eventType, key, path string, value []byte) {
+	var watcher = client.Watch("my_service", func(eventType, key, path string, value []byte) {
 		fmt.Println("1", eventType, key, path, string(value))
 	}, clientv3.WithPrefix())
 
-	c.Watch("my_service", func(eventType, key, path string, value []byte) {
-		fmt.Println("2", eventType, key, path, string(value))
-	}, clientv3.WithPrefix())
-
-	c.Watch("my_service", func(eventType, key, path string, value []byte) {
-		fmt.Println("3", eventType, key, path, string(value))
-	}, clientv3.WithPrefix())
-
-	wg.Wait()
+	var c = make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+MainLoop:
+	for {
+		s := <-c
+		switch s {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			break MainLoop
+		}
+	}
+	watcher.Close()
 }
