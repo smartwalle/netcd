@@ -28,10 +28,15 @@ func (this *Client) Register(key, value string, ttl int64) (int64, string, error
 		return 0, key, nil
 	}
 
-	_, leaseId, err := this.keepAlive(key, value, ttl)
+	keepAliveRsp, leaseId, err := this.keepAlive(key, value, ttl)
 	if err != nil {
 		return 0, "", err
 	}
+	go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
+		for {
+			<-rsp
+		}
+	}(leaseId, keepAliveRsp)
 	return int64(leaseId), key, err
 }
 
