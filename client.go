@@ -9,10 +9,10 @@ type Client struct {
 	client *clientv3.Client
 }
 
-func NewClient(client *clientv3.Client) (*Client, error) {
+func NewClient(client *clientv3.Client) *Client {
 	var s = &Client{}
 	s.client = client
-	return s, nil
+	return s
 }
 
 func (this *Client) NewKV() clientv3.KV {
