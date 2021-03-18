@@ -18,7 +18,7 @@ func main() {
 		return
 	}
 
-	var client, _ = etcd4go.NewClient(etcdClient)
+	var client = etcd4go.NewClient(etcdClient)
 	id, key, err := client.Register("my_service/node_1", "123", 5)
 	fmt.Println(id, key, err)
 
