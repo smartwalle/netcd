@@ -20,7 +20,7 @@ func main() {
 
 	var client = etcd4go.NewClient(etcdClient)
 
-	var watcher = client.Watch("my_service", func(eventType, key, path string, value []byte) {
+	var watcher = client.Watch("my_service", func(watcher *etcd4go.Watcher, eventType, key, path string, value []byte) {
 		fmt.Println("1", eventType, key, path, string(value))
 	}, clientv3.WithPrefix())
 

@@ -10,23 +10,23 @@ const (
 	EventDelete string = "DELETE"
 )
 
-type Handler func(event, key, path string, value []byte)
+type Handler func(watcher *Watcher, event, key, path string, value []byte)
 
 type Watcher struct {
+	watcher clientv3.Watcher
 	key     string
 	mu      *sync.RWMutex
 	values  map[string][]byte
 	handler Handler
-	watcher clientv3.Watcher
 }
 
 func newWatcher(key string, handler Handler, watcher clientv3.Watcher) *Watcher {
 	var n = &Watcher{}
+	n.watcher = watcher
 	n.key = key
 	n.mu = &sync.RWMutex{}
 	n.values = make(map[string][]byte)
 	n.handler = handler
-	n.watcher = watcher
 	return n
 }
 
@@ -36,10 +36,10 @@ func (this *Watcher) Key() string {
 
 func (this *Watcher) add(path string, value []byte) {
 	this.mu.Lock()
-	defer this.mu.Unlock()
 	this.values[path] = value
+	this.mu.Unlock()
 	if this.handler != nil {
-		this.handler(EventPut, this.key, path, value)
+		this.handler(this, EventPut, this.key, path, value)
 	}
 }
 
@@ -51,7 +51,7 @@ func (this *Watcher) Get(path string) []byte {
 
 func (this *Watcher) Values() map[string][]byte {
 	this.mu.RLock()
-	defer this.mu.Unlock()
+	defer this.mu.RUnlock()
 	var nMap = make(map[string][]byte)
 	for key, value := range this.values {
 		nMap[key] = value
@@ -61,11 +61,11 @@ func (this *Watcher) Values() map[string][]byte {
 
 func (this *Watcher) delete(path string) {
 	this.mu.Lock()
-	defer this.mu.Unlock()
 	var value = this.values[path]
 	delete(this.values, path)
+	this.mu.Unlock()
 	if this.handler != nil {
-		this.handler(EventDelete, this.key, path, value)
+		this.handler(this, EventDelete, this.key, path, value)
 	}
 }
 
