@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/coreos/etcd/clientv3"
 	"github.com/smartwalle/etcd4go"
+	"go.etcd.io/etcd/client/v3"
 	"os"
 	"os/signal"
 	"syscall"

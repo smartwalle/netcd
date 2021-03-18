@@ -2,7 +2,7 @@ package etcd4go
 
 import (
 	"context"
-	"github.com/coreos/etcd/clientv3"
+	"go.etcd.io/etcd/client/v3"
 )
 
 type Client struct {
