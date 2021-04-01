@@ -34,7 +34,9 @@ func (this *Client) Register(key, value string, ttl int64) (int64, string, error
 	}
 	go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
 		for {
-			<-rsp
+			if _, ok := <-rsp; ok == false {
+				return
+			}
 		}
 	}(leaseId, keepAliveRsp)
 	return int64(leaseId), key, err
