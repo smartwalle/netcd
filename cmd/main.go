@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/smartwalle/etcd4go"
 	"go.etcd.io/etcd/client/v3"
@@ -19,7 +20,7 @@ func main() {
 	}
 
 	var client = etcd4go.NewClient(etcdClient)
-	id, key, err := client.Register("my_service/node_1", "123", 5)
+	id, key, err := client.Register(context.Background(), "my_service/node_1", "123", 5)
 	fmt.Println(id, key, err)
 
 	var c = make(chan os.Signal, 1)
@@ -32,5 +33,5 @@ MainLoop:
 			break MainLoop
 		}
 	}
-	client.Revoke(id)
+	client.Revoke(context.Background(), id)
 }

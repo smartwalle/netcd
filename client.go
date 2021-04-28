@@ -19,16 +19,16 @@ func (this *Client) NewKV() clientv3.KV {
 	return clientv3.NewKV(this.client)
 }
 
-func (this *Client) Register(key, value string, ttl int64) (int64, string, error) {
+func (this *Client) Register(ctx context.Context, key, value string, ttl int64) (int64, string, error) {
 	if ttl <= 0 {
 		var kv = this.NewKV()
-		if _, err := kv.Put(context.Background(), key, value); err != nil {
+		if _, err := kv.Put(ctx, key, value); err != nil {
 			return 0, "", err
 		}
 		return 0, key, nil
 	}
 
-	keepAliveRsp, leaseId, err := this.keepAlive(key, value, ttl)
+	keepAliveRsp, leaseId, err := this.keepAlive(ctx, key, value, ttl)
 	if err != nil {
 		return 0, "", err
 	}
@@ -42,42 +42,42 @@ func (this *Client) Register(key, value string, ttl int64) (int64, string, error
 	return int64(leaseId), key, err
 }
 
-func (this *Client) keepAlive(key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
+func (this *Client) keepAlive(ctx context.Context, key, value string, ttl int64) (rsp <-chan *clientv3.LeaseKeepAliveResponse, leaseId clientv3.LeaseID, err error) {
 	var kv = this.NewKV()
 	var lease = clientv3.NewLease(this.client)
 
-	grantRsp, err := lease.Grant(context.Background(), ttl)
+	grantRsp, err := lease.Grant(ctx, ttl)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if _, err = kv.Put(context.Background(), key, value, clientv3.WithLease(grantRsp.ID)); err != nil {
+	if _, err = kv.Put(ctx, key, value, clientv3.WithLease(grantRsp.ID)); err != nil {
 		return nil, 0, err
 	}
 
-	rsp, err = lease.KeepAlive(context.Background(), grantRsp.ID)
+	rsp, err = lease.KeepAlive(ctx, grantRsp.ID)
 	return rsp, grantRsp.ID, err
 }
 
-func (this *Client) Deregister(key string, opts ...clientv3.OpOption) (err error) {
+func (this *Client) Deregister(ctx context.Context, key string, opts ...clientv3.OpOption) (err error) {
 	var kv = this.NewKV()
-	_, err = kv.Delete(context.Background(), key, opts...)
+	_, err = kv.Delete(ctx, key, opts...)
 	return err
 }
 
-func (this *Client) Revoke(leaseId int64) (err error) {
+func (this *Client) Revoke(ctx context.Context, leaseId int64) (err error) {
 	var lease = clientv3.NewLease(this.client)
-	_, err = lease.Revoke(context.Background(), clientv3.LeaseID(leaseId))
+	_, err = lease.Revoke(ctx, clientv3.LeaseID(leaseId))
 	return err
 }
 
-func (this *Client) Watch(key string, handler Handler, opts ...clientv3.OpOption) (watcher *Watcher) {
+func (this *Client) Watch(ctx context.Context, key string, handler Handler, opts ...clientv3.OpOption) (watcher *Watcher) {
 	var etcdWatcher = clientv3.NewWatcher(this.client)
-	var watchChan = etcdWatcher.Watch(context.Background(), key, opts...)
+	var watchChan = etcdWatcher.Watch(ctx, key, opts...)
 
 	watcher = newWatcher(key, handler, etcdWatcher)
 	var kv = this.NewKV()
-	rsp, _ := kv.Get(context.Background(), key, opts...)
+	rsp, _ := kv.Get(ctx, key, opts...)
 	if rsp != nil {
 		for _, k := range rsp.Kvs {
 			watcher.add(string(k.Key), k.Value)
