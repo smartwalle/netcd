@@ -59,7 +59,7 @@ func (this *Client) keepAlive(ctx context.Context, key, value string, ttl int64)
 	return rsp, grantRsp.ID, err
 }
 
-func (this *Client) Deregister(ctx context.Context, key string, opts ...clientv3.OpOption) (err error) {
+func (this *Client) Unregister(ctx context.Context, key string, opts ...clientv3.OpOption) (err error) {
 	var kv = this.NewKV()
 	_, err = kv.Delete(ctx, key, opts...)
 	return err
