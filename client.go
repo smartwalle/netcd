@@ -80,7 +80,7 @@ func (this *Client) Watch(ctx context.Context, key string, handler Handler, opts
 	rsp, _ := kv.Get(ctx, key, opts...)
 	if rsp != nil {
 		for _, k := range rsp.Kvs {
-			watcher.add(string(k.Key), k.Value)
+			watcher.add(string(k.Key), k.Value, false)
 		}
 	}
 
@@ -89,7 +89,7 @@ func (this *Client) Watch(ctx context.Context, key string, handler Handler, opts
 			for _, event := range c.Events {
 				switch event.Type {
 				case clientv3.EventTypePut:
-					wi.add(string(event.Kv.Key), event.Kv.Value)
+					wi.add(string(event.Kv.Key), event.Kv.Value, true)
 				case clientv3.EventTypeDelete:
 					wi.delete(string(event.Kv.Key))
 				}

@@ -34,11 +34,11 @@ func (this *Watcher) Key() string {
 	return this.key
 }
 
-func (this *Watcher) add(path string, value []byte) {
+func (this *Watcher) add(path string, value []byte, notify bool) {
 	this.mu.Lock()
 	this.values[path] = value
 	this.mu.Unlock()
-	if this.handler != nil {
+	if notify && this.handler != nil {
 		this.handler(this, EventPut, this.key, path, value)
 	}
 }
