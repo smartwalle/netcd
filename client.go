@@ -2,7 +2,6 @@ package etcd4go
 
 import (
 	"context"
-	"github.com/smartwalle/log4go"
 	"go.etcd.io/etcd/client/v3"
 )
 
@@ -36,7 +35,6 @@ func (this *Client) Register(ctx context.Context, key, value string, ttl int64) 
 	go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
 		for {
 			if _, ok := <-rsp; ok == false {
-				log4go.Println("etcd 断开。。。。")
 				return
 			}
 		}
