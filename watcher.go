@@ -15,7 +15,7 @@ type Handler func(watcher *Watcher, event, key, path string, value []byte)
 type Watcher struct {
 	watcher clientv3.Watcher
 	key     string
-	mu      *sync.RWMutex
+	mu      sync.RWMutex
 	values  map[string][]byte
 	handler Handler
 }
@@ -24,7 +24,6 @@ func newWatcher(key string, handler Handler, watcher clientv3.Watcher) *Watcher 
 	var n = &Watcher{}
 	n.watcher = watcher
 	n.key = key
-	n.mu = &sync.RWMutex{}
 	n.values = make(map[string][]byte)
 	n.handler = handler
 	return n
@@ -34,11 +33,11 @@ func (w *Watcher) Key() string {
 	return w.key
 }
 
-func (w *Watcher) add(path string, value []byte, notify bool) {
+func (w *Watcher) add(path string, value []byte, dispatch bool) {
 	w.mu.Lock()
 	w.values[path] = value
 	w.mu.Unlock()
-	if notify && w.handler != nil {
+	if dispatch && w.handler != nil {
 		w.handler(w, EventPut, w.key, path, value)
 	}
 }
@@ -70,8 +69,6 @@ func (w *Watcher) delete(path string) {
 }
 
 func (w *Watcher) Close() error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
 	if w.watcher == nil {
 		return nil
 	}
