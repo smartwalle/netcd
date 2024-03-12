@@ -1,4 +1,4 @@
-package etcd4go
+package netcd
 
 import (
 	"go.etcd.io/etcd/client/v3"

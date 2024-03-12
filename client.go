@@ -1,4 +1,4 @@
-package etcd4go
+package netcd
 
 import (
 	"context"
@@ -31,13 +31,10 @@ func (c *Client) Register(ctx context.Context, key, value string, ttl int64) (in
 	if err != nil {
 		return 0, "", err
 	}
-	go func(leaseId clientv3.LeaseID, rsp <-chan *clientv3.LeaseKeepAliveResponse) {
-		for {
-			if _, ok := <-rsp; ok == false {
-				return
-			}
+	go func() {
+		for range keepAliveRsp {
 		}
-	}(leaseId, keepAliveRsp)
+	}()
 	return int64(leaseId), key, err
 }
 

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/smartwalle/etcd4go"
+	"github.com/smartwalle/netcd"
 	"go.etcd.io/etcd/client/v3"
 	"os"
 	"os/signal"
@@ -19,7 +19,7 @@ func main() {
 		return
 	}
 
-	var client = etcd4go.NewClient(etcdClient)
+	var client = netcd.NewClient(etcdClient)
 	id, key, err := client.Register(context.Background(), "my_service/node_1", "123", 5)
 	fmt.Println(id, key, err)
 
@@ -34,4 +34,6 @@ MainLoop:
 		}
 	}
 	client.Revoke(context.Background(), id)
+
+	etcdClient.Close()
 }

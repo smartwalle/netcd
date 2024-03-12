@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/smartwalle/etcd4go"
+	"github.com/smartwalle/netcd"
 	"go.etcd.io/etcd/client/v3"
 	"os"
 	"os/signal"
@@ -19,9 +19,9 @@ func main() {
 		return
 	}
 
-	var client = etcd4go.NewClient(etcdClient)
+	var client = netcd.NewClient(etcdClient)
 
-	var watcher = client.Watch(context.Background(), "my_service", func(watcher *etcd4go.Watcher, eventType, key, path string, value []byte) {
+	var watcher = client.Watch(context.Background(), "my_service", func(watcher *netcd.Watcher, eventType, key, path string, value []byte) {
 		fmt.Println("1", eventType, key, path, string(value))
 	}, clientv3.WithPrefix())
 
@@ -36,4 +36,6 @@ MainLoop:
 		}
 	}
 	watcher.Close()
+
+	etcdClient.Close()
 }

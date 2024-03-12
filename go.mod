@@ -1,4 +1,4 @@
-module github.com/smartwalle/etcd4go
+module github.com/smartwalle/netcd
 
 go 1.12
 
