@@ -30,50 +30,50 @@ func newWatcher(key string, handler Handler, watcher clientv3.Watcher) *Watcher 
 	return n
 }
 
-func (this *Watcher) Key() string {
-	return this.key
+func (w *Watcher) Key() string {
+	return w.key
 }
 
-func (this *Watcher) add(path string, value []byte, notify bool) {
-	this.mu.Lock()
-	this.values[path] = value
-	this.mu.Unlock()
-	if notify && this.handler != nil {
-		this.handler(this, EventPut, this.key, path, value)
+func (w *Watcher) add(path string, value []byte, notify bool) {
+	w.mu.Lock()
+	w.values[path] = value
+	w.mu.Unlock()
+	if notify && w.handler != nil {
+		w.handler(w, EventPut, w.key, path, value)
 	}
 }
 
-func (this *Watcher) Get(path string) []byte {
-	this.mu.RLock()
-	defer this.mu.RUnlock()
-	return this.values[path]
+func (w *Watcher) Get(path string) []byte {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	return w.values[path]
 }
 
-func (this *Watcher) Values() map[string][]byte {
-	this.mu.RLock()
-	defer this.mu.RUnlock()
+func (w *Watcher) Values() map[string][]byte {
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 	var nMap = make(map[string][]byte)
-	for key, value := range this.values {
+	for key, value := range w.values {
 		nMap[key] = value
 	}
 	return nMap
 }
 
-func (this *Watcher) delete(path string) {
-	this.mu.Lock()
-	var value = this.values[path]
-	delete(this.values, path)
-	this.mu.Unlock()
-	if this.handler != nil {
-		this.handler(this, EventDelete, this.key, path, value)
+func (w *Watcher) delete(path string) {
+	w.mu.Lock()
+	var value = w.values[path]
+	delete(w.values, path)
+	w.mu.Unlock()
+	if w.handler != nil {
+		w.handler(w, EventDelete, w.key, path, value)
 	}
 }
 
-func (this *Watcher) Close() error {
-	this.mu.Lock()
-	defer this.mu.Unlock()
-	if this.watcher == nil {
+func (w *Watcher) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.watcher == nil {
 		return nil
 	}
-	return this.watcher.Close()
+	return w.watcher.Close()
 }
