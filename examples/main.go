@@ -12,7 +12,7 @@ import (
 
 func main() {
 	var config = clientv3.Config{}
-	config.Endpoints = []string{"192.168.1.9:2379"}
+	config.Endpoints = []string{"127.0.0.1:2379"}
 	etcdClient, err := clientv3.New(config)
 	if err != nil {
 		fmt.Println(err)
