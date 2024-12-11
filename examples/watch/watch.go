@@ -21,7 +21,7 @@ func main() {
 
 	var client = netcd.NewClient(etcdClient)
 
-	var watcher = client.Watch(context.Background(), "my_service", func(watcher *netcd.Watcher, eventType, key, path string, value []byte) {
+	var watcher, _ = client.Watch(context.Background(), "my_service", func(watcher *netcd.Watcher, eventType, key, path string, value []byte) {
 		fmt.Println("1", eventType, key, path, string(value))
 	}, clientv3.WithPrefix())
 

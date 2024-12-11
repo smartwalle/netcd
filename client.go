@@ -62,16 +62,16 @@ func (c *Client) Revoke(ctx context.Context, leaseId int64) (err error) {
 	return err
 }
 
-func (c *Client) Watch(ctx context.Context, key string, handler Handler, opts ...clientv3.OpOption) *Watcher {
+func (c *Client) Watch(ctx context.Context, key string, handler Handler, opts ...clientv3.OpOption) (*Watcher, error) {
 	var watcher = clientv3.NewWatcher(c.client)
 	var watchChan = watcher.Watch(ctx, key, opts...)
+	rsp, err := c.client.Get(ctx, key, opts...)
+	if err != nil {
+		return nil, err
+	}
 	var nWatcher = newWatcher(key, handler, watcher)
-
-	rsp, _ := c.client.Get(ctx, key, opts...)
-	if rsp != nil {
-		for _, k := range rsp.Kvs {
-			nWatcher.add(string(k.Key), k.Value, false)
-		}
+	for _, k := range rsp.Kvs {
+		nWatcher.add(string(k.Key), k.Value, false)
 	}
 
 	go func() {
@@ -86,5 +86,5 @@ func (c *Client) Watch(ctx context.Context, key string, handler Handler, opts ..
 			}
 		}
 	}()
-	return nWatcher
+	return nWatcher, nil
 }
