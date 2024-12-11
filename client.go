@@ -3,6 +3,7 @@ package netcd
 import (
 	"context"
 	"go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/client/v3/concurrency"
 )
 
 type Client struct {
@@ -15,8 +16,20 @@ func NewClient(client *clientv3.Client) *Client {
 	return c
 }
 
+func (c *Client) Client() *clientv3.Client {
+	return c.client
+}
+
 func (c *Client) NewKV() clientv3.KV {
 	return clientv3.NewKV(c.client)
+}
+
+func (c *Client) NewMutex(key string, opts ...concurrency.SessionOption) (*Mutex, error) {
+	var mutex, err = NewMutex(c.client, key, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return mutex, nil
 }
 
 func (c *Client) Register(ctx context.Context, key, value string, ttl int64) (int64, string, error) {
