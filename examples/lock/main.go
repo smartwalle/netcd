@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/smartwalle/netcd"
 	"go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/client/v3/concurrency"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -23,25 +23,31 @@ func main() {
 
 	var client = netcd.NewClient(etcdClient)
 
-	var m, mErr = client.NewMutex("testx", concurrency.WithTTL(1))
-	if mErr != nil {
-		fmt.Println("创建互斥锁异常:", mErr)
-		return
-	}
-	fmt.Println("等待获取资源")
-	if mErr = m.Lock(context.Background()); mErr != nil {
-		fmt.Println("添加锁异常", mErr)
-		return
-	}
-	defer m.Unlock(context.Background())
+	for i := 0; i < 5; i++ {
+		go func(idx int) {
+			var lock, merr = client.NewMutex("test-lock")
+			if merr != nil {
+				fmt.Println("创建互斥锁异常:", merr)
+				return
+			}
 
-	fmt.Println("good")
+			if merr = lock.Lock(context.Background()); merr != nil {
+				fmt.Println("添加锁异常:", merr)
+				return
+			}
 
-	var c = make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+			fmt.Println(idx, " start")
+			time.Sleep(time.Second * 4)
+			fmt.Println(idx, " end")
+			lock.Unlock(context.Background())
+		}(i)
+	}
+
+	var sigs = make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 MainLoop:
 	for {
-		s := <-c
+		s := <-sigs
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			break MainLoop
